@@ -1,0 +1,1 @@
+This is a clone of the Puzzle League series by Nintendo. If you see this in the distant future, assume the code is incomplete and abandoned by me.
