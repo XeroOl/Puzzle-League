@@ -24,13 +24,13 @@ public class Player {
 	private int timelimit = -1; // number of frames until gameover, where -1 is disabled
 	private boolean multiplayertrashmetal = true; // trash sent by one player will not clear adjacent trash from other players
 	/*------------------------------*CODE*------------------------------*/
-	private Random r;
+	private static final Random r = new Random();
 	private Block[][] board = new Block[HEIGHT][WIDTH];
-	private int cx = WIDTH/2-1, cy = HEIGHT/2;
+	private int cx = WIDTH / 2 - 1, cy = HEIGHT / 2;
 	private int mychain = 0;
 	private boolean raise = true; // set to false if anything at all should stop the stack from raising
 
-	public class Builder {
+	public static class Builder {
 		private Player p = new Player();
 
 		public Builder setExplodeLift(boolean explodelift) {
@@ -98,7 +98,12 @@ public class Player {
 	}
 
 	public void init() {
-
+		for (int x = 0; x < WIDTH; x++) {
+			for (int y = 0; y < HEIGHT; y++) {
+				board[y][x] = new Block();
+				board[y][x].color = r.nextInt(6);
+			}
+		}
 	}
 
 	public void update(final GameInput input) {
@@ -141,8 +146,8 @@ public class Player {
 
 	private void animateswap() {
 		Block temp = null;
-		for (int x = 0; x < board.length; x++) {
-			for (int y = 0; y < board[0].length; y++) {
+		for (int x = 0; x < WIDTH; x++) {
+			for (int y = 0; y < HEIGHT; y++) {
 				if (board[y][x].swapAnim != 0) {
 					if (board[y][x].swapAnim > 0) {
 						board[y][x].swapAnim--;
@@ -153,7 +158,9 @@ public class Player {
 						board[y][x].swapAnim++;
 						if (board[y][x].swapAnim == -2) {
 							board[y][x - 1] = board[y][x];
+							board[y][x - 1].swapAnim = 2;
 							board[y][x] = temp;//put it in the other slot
+							board[y][x].swapAnim = -2;
 						}
 					}
 				}
@@ -163,7 +170,24 @@ public class Player {
 	}
 
 	private void fall() {
-
+		for (int y = HEIGHT - 1; y >= 0; y--) {
+			for (int x = 0; x < WIDTH; x++) {
+				if (board[y][x].canSwap()) {
+					board[y][x].inair = (board[y][x].inair && board[y][x].offset > 0) || (y != HEIGHT - 1 && board[y + 1][x].color == 0);
+					if (board[y][x].inair) {
+						board[y][x].offset--;
+						if (board[y][x].offset < 0) {
+							if (y != HEIGHT - 1 && board[y + 1][x].color == 0) {
+								Block temp = board[y + 1][x];
+								board[y + 1][x] = board[y][x];
+								board[y][x] = temp;
+								board[y + 1][x].offset += 16;
+							}
+						}
+					}
+				}
+			}
+		}
 	}
 
 	private void match() {

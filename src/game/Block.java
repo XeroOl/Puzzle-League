@@ -2,10 +2,11 @@ package game;
 
 public class Block {
 	int color = 0;
-	boolean trash;
-	int matchclear;
-	boolean inair;
-	boolean chainpowered;
+	int veldown = 0;
+	boolean trash = false;
+	int matchclear = 0;
+	boolean inair = false;
+	boolean chainpowered = false;
 	byte swapAnim = 0;
 	byte offset = 0;
 	byte animation = -1;
@@ -49,5 +50,5 @@ public class Block {
 	public byte getAnimation() {
 		return animation;
 	}
-	
+
 }
