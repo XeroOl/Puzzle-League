@@ -9,7 +9,8 @@ import display.GameInput;
  * @author Edison
  */
 public class Player {
-
+	public static final int HEIGHT = 12;
+	public static final int WIDTH = 6;
 	/*------------------------------*OPTIONS*------------------------------*/
 	private boolean explodelift = true;
 	private int fallspeed = -1; // fallspeed -1 = instant
@@ -24,10 +25,10 @@ public class Player {
 	private boolean multiplayertrashmetal = true; // trash sent by one player will not clear adjacent trash from other players
 	/*------------------------------*CODE*------------------------------*/
 	private Random r;
-	private Block[][] board = new Block[12][6];
-	private int cx = 2, cy = 6;
-	public int mychain = 0;
-	public boolean raise = true; // set to false if anything at all should stop the stack from raising
+	private Block[][] board = new Block[HEIGHT][WIDTH];
+	private int cx = WIDTH/2-1, cy = HEIGHT/2;
+	private int mychain = 0;
+	private boolean raise = true; // set to false if anything at all should stop the stack from raising
 
 	public class Builder {
 		private Player p = new Player();
@@ -104,17 +105,17 @@ public class Player {
 		raise = true;
 		cursor(input);
 		swap(input);
-		animatematch(); // set above block's chain to true
-		fall();
 		animateswap();
+		fall();
 		match();
+		animatematch(); // set above block's chain to true
 		resetchainflag(); // set ground block's chain to false, if there is no match nor block that is chain, tell trash() to send the trash;
 		clearline();
 		trash(); //sends trash, and adds sent trash
 		lift(input);
 	}
 
-	public void cursor(GameInput input) {
+	private void cursor(GameInput input) {
 		if (input.left && cx > 0)
 			cx--;
 		if (input.right && cx < board.length - 2)
@@ -125,7 +126,11 @@ public class Player {
 			cy++;
 	}
 
-	public void swap(GameInput input) {
+	public Block blockAt(int x, int y) {
+		return board[y][x];
+	}
+
+	private void swap(GameInput input) {
 		if (input.swapping) {
 			if (board[cy][cx].canSwap() && board[cy][cx + 1].canSwap()) {
 				board[cy][cx].swapAnim = 4;
@@ -134,41 +139,55 @@ public class Player {
 		}
 	}
 
-	public void animatematch() {
-		// TODO Auto-generated method stub
-
-	}
-
-	public void fall() {
-
-	}
-
-	public void animateswap() {
+	private void animateswap() {
+		Block temp = null;
 		for (int x = 0; x < board.length; x++) {
 			for (int y = 0; y < board[0].length; y++) {
-
+				if (board[y][x].swapAnim != 0) {
+					if (board[y][x].swapAnim > 0) {
+						board[y][x].swapAnim--;
+						if (board[y][x].swapAnim == 2) {
+							temp = board[y][x];//save this block
+						}
+					} else {
+						board[y][x].swapAnim++;
+						if (board[y][x].swapAnim == -2) {
+							board[y][x - 1] = board[y][x];
+							board[y][x] = temp;//put it in the other slot
+						}
+					}
+				}
 			}
 		}
 
 	}
 
-	public void match() {
+	private void fall() {
 
 	}
 
-	public void resetchainflag() {
+	private void match() {
 
 	}
 
-	public void clearline() {
+	private void animatematch() {
+		// TODO Auto-generated method stub
 
 	}
 
-	public void trash() {
+	private void resetchainflag() {
 
 	}
 
-	public void lift(GameInput input) {
+	private void clearline() {
+
+	}
+
+	private void trash() {
+
+	}
+
+	private void lift(GameInput input) {
 
 	}
 
