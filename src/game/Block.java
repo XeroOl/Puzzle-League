@@ -4,19 +4,27 @@ public class Block {
 	int color = 0;
 	int veldown = 0;
 	boolean trash = false;
-	int matchclear = 0;
 	boolean inair = false;
 	boolean chainpowered = false;
+	int chainnum = 0;
 	byte swapAnim = 0;
 	byte offset = 0;
 	byte animation = -1;
 
 	public boolean canSwap() {
-		return (!trash && animation < 0 && swapAnim == 0);
+		return (!trash && !inAnimation());
 	}
 
-	public boolean solid() {
-		return !(color == 0 && canSwap());
+	public boolean inAnimation() {
+		return !(animation < 0 && swapAnim == 0);
+	}
+
+	public boolean inMatchAnimation() {
+		return animation > 0;
+	}
+
+	public boolean isSolid() {
+		return !(color == 0 && !inAnimation());
 	}
 
 	public int getColor() {
@@ -25,10 +33,6 @@ public class Block {
 
 	public boolean isTrash() {
 		return trash;
-	}
-
-	public int getMatchclear() {
-		return matchclear;
 	}
 
 	public boolean isInair() {
@@ -51,4 +55,15 @@ public class Block {
 		return animation;
 	}
 
+	public boolean canMatch() {
+		return !trash && color != 0 && !inair && !inAnimation();
+	}
+
+	public boolean equals(Object o) {
+		return o != null && o instanceof Block && ((Block) o).color == color;
+	}
+
+	public int getChainNum() {
+		return chainnum;
+	}
 }

@@ -17,6 +17,7 @@ import javax.imageio.ImageIO;
 public class Display extends Canvas {
 	BufferStrategy bs;
 	int theme = 1;
+	String themepath = "assets/theme" + theme + "/";
 	static int tilesize = 16;
 	static Map<String, Image> images = new HashMap<String, Image>();
 
@@ -31,20 +32,25 @@ public class Display extends Canvas {
 				return;
 		}
 		Graphics g = bs.getDrawGraphics();
+		g.drawImage(get(themepath + "background1.png"), 0, 0, null);
 		for (int x = 0; x < Player.WIDTH; x++) {
 			for (int y = 0; y < Player.HEIGHT; y++) {
 				Block b = p.blockAt(x, y);
 				if (b.getColor() != 0) {
 					if (b.isTrash()) {
 						//ignore it for now
+					} else if (b.inMatchAnimation()) {
+						g.drawImage(get(themepath + "match" + b.getChainNum() + ".png"), x * 16, y * 16, null);
 					} else {
-						g.drawImage(get("assets/theme" + theme + "/block" + b.getColor()+".png"), x * 16+b.getSwapAnim()*4, y * 16 - b.getOffset(), null);
+						g.drawImage(get(themepath + "block" + b.getColor() + ".png"), x * 16 + b.getSwapAnim() * 2,
+								y * 16 - b.getOffset(), null);
 					}
 				}
 			}
 		}
 		bs.show();
 		g.dispose();
+
 	}
 
 	private Image get(String name) {

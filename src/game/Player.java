@@ -6,6 +6,7 @@ import display.GameInput;
 
 /**
  * This is area where the blocks and stuff are!
+ * 
  * @author Edison
  */
 public class Player {
@@ -27,7 +28,7 @@ public class Player {
 	private static final Random r = new Random();
 	private Block[][] board = new Block[HEIGHT][WIDTH];
 	private int cx = WIDTH / 2 - 1, cy = HEIGHT / 2;
-	private int mychain = 0;
+	private int mychain = 1;
 	private boolean raise = true; // set to false if anything at all should stop the stack from raising
 
 	public static class Builder {
@@ -101,7 +102,7 @@ public class Player {
 		for (int x = 0; x < WIDTH; x++) {
 			for (int y = 0; y < HEIGHT; y++) {
 				board[y][x] = new Block();
-				board[y][x].color = r.nextInt(6);
+				board[y][x].color = r.nextInt(4);
 			}
 		}
 	}
@@ -111,9 +112,10 @@ public class Player {
 		cursor(input);
 		swap(input);
 		animateswap();
+		animatematch(); // set above block's chain to true
 		fall();
 		match();
-		animatematch(); // set above block's chain to true
+
 		resetchainflag(); // set ground block's chain to false, if there is no match nor block that is chain, tell trash() to send the trash;
 		clearline();
 		trash(); //sends trash, and adds sent trash
@@ -172,12 +174,13 @@ public class Player {
 	private void fall() {
 		for (int y = HEIGHT - 1; y >= 0; y--) {
 			for (int x = 0; x < WIDTH; x++) {
-				if (board[y][x].canSwap()) {
-					board[y][x].inair = (board[y][x].inair && board[y][x].offset > 0) || (y != HEIGHT - 1 && board[y + 1][x].color == 0);
+				if (board[y][x].canSwap() && board[y][x].color != 0) {
+					board[y][x].inair = (board[y][x].inair && board[y][x].offset > 0)
+							|| (y != HEIGHT - 1 && !board[y + 1][x].isSolid());
 					if (board[y][x].inair) {
-						board[y][x].offset--;
+						board[y][x].offset -= 16;
 						if (board[y][x].offset < 0) {
-							if (y != HEIGHT - 1 && board[y + 1][x].color == 0) {
+							if (y != HEIGHT - 1 && !board[y + 1][x].isSolid()) {
 								Block temp = board[y + 1][x];
 								board[y + 1][x] = board[y][x];
 								board[y][x] = temp;
@@ -191,16 +194,94 @@ public class Player {
 	}
 
 	private void match() {
+		boolean ischainmatch = false;
+		boolean ismatch = false;
+		for (int y = 1; y < HEIGHT - 1; y++) {
+			for (int x = 0; x < WIDTH; x++) {
+				//vertical
+				if (board[y][x].canMatch() && board[y + 1][x].canMatch() && board[y - 1][x].canMatch()
+						&& board[y][x].equals(board[y + 1][x]) && board[y][x].equals(board[y - 1][x])) {
+					ismatch = true;
+					board[y][x].animation = -2;
+					board[y + 1][x].animation = -2;
+					board[y - 1][x].animation = -2;
+					ischainmatch |= board[y][x].chainpowered || board[y + 1][x].chainpowered
+							|| board[y - 1][x].chainpowered;
+				}
+			}
+		}
+		for (int y = 0; y < HEIGHT; y++) {
+			for (int x = 1; x < WIDTH - 1; x++) {
+				//horizontal
+				if (board[y][x].canMatch() && board[y][x + 1].canMatch() && board[y][x - 1].canMatch()
+						&& board[y][x].equals(board[y][x + 1]) && board[y][x].equals(board[y][x - 1])) {
+					ismatch = true;
+					board[y][x].animation = -2;
+					board[y][x + 1].animation = -2;
+					board[y][x - 1].animation = -2;
+					ischainmatch |= board[y][x].chainpowered || board[y][x + 1].chainpowered
+							|| board[y][x - 1].chainpowered;
+				}
+			}
+		}
+		if (ismatch) {
+			if (ischainmatch) {
+				mychain++;
+			}
+			int count = 0;
+			for (int y = 0; y < HEIGHT; y++) {
+				for (int x = 0; x < WIDTH; x++) {
+					//finalize matches
+					if (board[y][x].animation == -2) {
 
+						board[y][x].animation = 30;
+						board[y][x].chainnum = ischainmatch ? mychain : 1;
+						count++;
+					}
+				}
+			}
+			if (count > 3) {
+				System.out.println("Send trash because of +" + count + " combo");
+			}
+		}
 	}
 
 	private void animatematch() {
-		// TODO Auto-generated method stub
-
+		int y2;
+		for (int y = 0; y < HEIGHT; y++) {
+			for (int x = 0; x < WIDTH; x++) {
+				if (board[y][x].animation > 0) {
+					board[y][x].animation--;
+					if (board[y][x].animation == 0) {
+						board[y][x] = new Block();
+						for (y2 = y - 1; y2 >= 0 && board[y2][x].canMatch(); y2--) {
+							board[y2][x].chainpowered = true;
+						}
+					}
+				}
+			}
+		}
 	}
 
 	private void resetchainflag() {
-
+		boolean keep = false;
+		for (int y = 0; y < HEIGHT; y++) {
+			for (int x = 0; x < WIDTH; x++) {
+				if (board[y][x].canMatch() && (y == HEIGHT - 1 || !board[y + 1][x].inAnimation())) {
+					board[y][x].chainpowered = false;
+				} else {
+					if (board[y][x].chainpowered) {
+						keep = true;
+					}
+				}
+			}
+		}
+		if (!keep) {
+			if (mychain > 1) {
+				System.out.println("send a trash because of x" + mychain + " chain");
+			}
+			mychain = 1;
+		}
 	}
 
 	private void clearline() {
