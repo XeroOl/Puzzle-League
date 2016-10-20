@@ -20,14 +20,21 @@ public class Runner {
 		g.up = false;
 		g.swapping = false;
 		g.raisingStack = false;
+		p.update(g);
+		d.update(p);
+		try {
+			Thread.sleep(5000);
+		} catch (InterruptedException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
 		long time = System.currentTimeMillis();
 		long wait = 1000 / 30;
 		long now;
 		while (true) {
 			now = System.currentTimeMillis();
 			if (now > time + wait) {
-				g.swapping = Math.random() * 15 < 1;
-				time+=wait;
+				time += wait;
 				p.update(g);
 				d.update(p);
 			} else {

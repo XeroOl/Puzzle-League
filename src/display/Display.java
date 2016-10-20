@@ -3,8 +3,9 @@ package display;
 import game.Block;
 import game.Player;
 
+import java.awt.AlphaComposite;
 import java.awt.Canvas;
-import java.awt.Graphics;
+import java.awt.Graphics2D;
 import java.awt.Image;
 import java.awt.image.BufferStrategy;
 import java.io.File;
@@ -31,23 +32,35 @@ public class Display extends Canvas {
 			if (bs == null)
 				return;
 		}
-		Graphics g = bs.getDrawGraphics();
+		Graphics2D g = (Graphics2D) bs.getDrawGraphics();
+		g.scale(2.0, 2.0);
 		g.drawImage(get(themepath + "background1.png"), 0, 0, null);
+		g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC));
 		for (int x = 0; x < Player.WIDTH; x++) {
 			for (int y = 0; y < Player.HEIGHT; y++) {
 				Block b = p.blockAt(x, y);
 				if (b.getColor() != 0) {
 					if (b.isTrash()) {
 						//ignore it for now
-					} else if (b.inMatchAnimation()) {
-						g.drawImage(get(themepath + "match" + b.getChainNum() + ".png"), x * 16, y * 16, null);
-					} else {
-						g.drawImage(get(themepath + "block" + b.getColor() + ".png"), x * 16 + b.getSwapAnim() * 2,
-								y * 16 - b.getOffset(), null);
+					} else if (!b.inMatchAnimation()) {
+						g.drawImage(get(themepath + "block" + b.getColor() + ".png"), x * tilesize + b.getSwapAnim() * 2, y * tilesize - b.getOffset(), null);
 					}
 				}
 			}
 		}
+		g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, .3f));
+		for (int x = 0; x < Player.WIDTH; x++) {
+			for (int y = 0; y < Player.HEIGHT; y++) {
+				Block b = p.blockAt(x, y);
+				if (b.getColor() != 0) {
+					if (b.inMatchAnimation()) {
+						g.drawImage(get(themepath + "block" + b.getColor() + ".png"), x * tilesize + tilesize / 2 - b.getMatchAnimationFrame(), y * tilesize + tilesize / 2 - b.getMatchAnimationFrame(), 2 * b.getMatchAnimationFrame(), 2 * b.getMatchAnimationFrame(), null);
+						g.drawImage(get(themepath + "match" + b.getChainNum() + ".png"), x * 16, y * 16, null);
+					}
+				}
+			}
+		}
+
 		bs.show();
 		g.dispose();
 

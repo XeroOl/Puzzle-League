@@ -9,18 +9,19 @@ public class Block {
 	int chainnum = 0;
 	byte swapAnim = 0;
 	byte offset = 0;
-	byte animation = -1;
+	int matchanimationframe = -1;
+	int matchid = -1;
 
 	public boolean canSwap() {
 		return (!trash && !inAnimation());
 	}
 
 	public boolean inAnimation() {
-		return !(animation < 0 && swapAnim == 0);
+		return !(matchanimationframe < 0 && swapAnim == 0);
 	}
 
 	public boolean inMatchAnimation() {
-		return animation > 0;
+		return matchanimationframe > 0;
 	}
 
 	public boolean isSolid() {
@@ -51,8 +52,8 @@ public class Block {
 		return offset;
 	}
 
-	public byte getAnimation() {
-		return animation;
+	public int getMatchAnimationFrame() {
+		return matchanimationframe * 2 / Player.TILESIZE - matchid == 0 ? matchid * Player.TILESIZE / 2 - matchanimationframe : matchanimationframe * 2 / Player.TILESIZE - matchid > 0 ? Player.TILESIZE/2 - 1 : 0;
 	}
 
 	public boolean canMatch() {

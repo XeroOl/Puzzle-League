@@ -12,9 +12,10 @@ import display.GameInput;
 public class Player {
 	public static final int HEIGHT = 12;
 	public static final int WIDTH = 6;
+	public static final int TILESIZE = 16;
 	/*------------------------------*OPTIONS*------------------------------*/
 	private boolean explodelift = true;
-	private int fallspeed = -1; // fallspeed -1 = instant
+	private int fallspeed = 1; // fallspeed -1 = instant
 	private int blocktypecount = 5; //number of unique types of blocks
 	private int maxtrashheight = 100; //number of lines of trash above top of screen before player loses
 	private int stoptimermultiplier = 1; // 1 = normal, 0 = instakill, -1 = infinite time
@@ -30,6 +31,7 @@ public class Player {
 	private int cx = WIDTH / 2 - 1, cy = HEIGHT / 2;
 	private int mychain = 1;
 	private boolean raise = true; // set to false if anything at all should stop the stack from raising
+	private Block[] nextrow = new Block[WIDTH];
 
 	public static class Builder {
 		private Player p = new Player();
@@ -172,19 +174,29 @@ public class Player {
 	}
 
 	private void fall() {
+
 		for (int y = HEIGHT - 1; y >= 0; y--) {
 			for (int x = 0; x < WIDTH; x++) {
 				if (board[y][x].canSwap() && board[y][x].color != 0) {
-					board[y][x].inair = (board[y][x].inair && board[y][x].offset > 0)
-							|| (y != HEIGHT - 1 && !board[y + 1][x].isSolid());
+					board[y][x].inair = (board[y][x].inair && board[y][x].offset > 0) || (y != HEIGHT - 1 && !board[y + 1][x].isSolid());
 					if (board[y][x].inair) {
-						board[y][x].offset -= 16;
+						if (fallspeed == -1)
+							board[y][x].offset -= TILESIZE;
+						else {
+							board[y][x].veldown += fallspeed;
+							if (board[y][x].veldown > TILESIZE)
+								board[y][x].veldown = TILESIZE;
+							board[y][x].offset -= board[y][x].veldown;
+						}
 						if (board[y][x].offset < 0) {
 							if (y != HEIGHT - 1 && !board[y + 1][x].isSolid()) {
 								Block temp = board[y + 1][x];
 								board[y + 1][x] = board[y][x];
 								board[y][x] = temp;
-								board[y + 1][x].offset += 16;
+								board[y + 1][x].offset += TILESIZE;
+							} else {
+								board[y][x].offset = 0;
+								board[y][x].veldown = 0;
 							}
 						}
 					}
@@ -199,28 +211,24 @@ public class Player {
 		for (int y = 1; y < HEIGHT - 1; y++) {
 			for (int x = 0; x < WIDTH; x++) {
 				//vertical
-				if (board[y][x].canMatch() && board[y + 1][x].canMatch() && board[y - 1][x].canMatch()
-						&& board[y][x].equals(board[y + 1][x]) && board[y][x].equals(board[y - 1][x])) {
+				if (board[y][x].canMatch() && board[y + 1][x].canMatch() && board[y - 1][x].canMatch() && board[y][x].equals(board[y + 1][x]) && board[y][x].equals(board[y - 1][x])) {
 					ismatch = true;
-					board[y][x].animation = -2;
-					board[y + 1][x].animation = -2;
-					board[y - 1][x].animation = -2;
-					ischainmatch |= board[y][x].chainpowered || board[y + 1][x].chainpowered
-							|| board[y - 1][x].chainpowered;
+					board[y][x].matchanimationframe = -2;
+					board[y + 1][x].matchanimationframe = -2;
+					board[y - 1][x].matchanimationframe = -2;
+					ischainmatch |= board[y][x].chainpowered || board[y + 1][x].chainpowered || board[y - 1][x].chainpowered;
 				}
 			}
 		}
 		for (int y = 0; y < HEIGHT; y++) {
 			for (int x = 1; x < WIDTH - 1; x++) {
 				//horizontal
-				if (board[y][x].canMatch() && board[y][x + 1].canMatch() && board[y][x - 1].canMatch()
-						&& board[y][x].equals(board[y][x + 1]) && board[y][x].equals(board[y][x - 1])) {
+				if (board[y][x].canMatch() && board[y][x + 1].canMatch() && board[y][x - 1].canMatch() && board[y][x].equals(board[y][x + 1]) && board[y][x].equals(board[y][x - 1])) {
 					ismatch = true;
-					board[y][x].animation = -2;
-					board[y][x + 1].animation = -2;
-					board[y][x - 1].animation = -2;
-					ischainmatch |= board[y][x].chainpowered || board[y][x + 1].chainpowered
-							|| board[y][x - 1].chainpowered;
+					board[y][x].matchanimationframe = -2;
+					board[y][x + 1].matchanimationframe = -2;
+					board[y][x - 1].matchanimationframe = -2;
+					ischainmatch |= board[y][x].chainpowered || board[y][x + 1].chainpowered || board[y][x - 1].chainpowered;
 				}
 			}
 		}
@@ -232,11 +240,19 @@ public class Player {
 			for (int y = 0; y < HEIGHT; y++) {
 				for (int x = 0; x < WIDTH; x++) {
 					//finalize matches
-					if (board[y][x].animation == -2) {
+					if (board[y][x].matchanimationframe == -2) {
 
-						board[y][x].animation = 30;
+						board[y][x].matchid = count;
 						board[y][x].chainnum = ischainmatch ? mychain : 1;
 						count++;
+					}
+				}
+			}
+			for (int y = 0; y < HEIGHT; y++) {
+				for (int x = 0; x < WIDTH; x++) {
+					if (board[y][x].matchanimationframe == -2) {
+
+						board[y][x].matchanimationframe = count * TILESIZE / 2 + 30;
 					}
 				}
 			}
@@ -250,9 +266,9 @@ public class Player {
 		int y2;
 		for (int y = 0; y < HEIGHT; y++) {
 			for (int x = 0; x < WIDTH; x++) {
-				if (board[y][x].animation > 0) {
-					board[y][x].animation--;
-					if (board[y][x].animation == 0) {
+				if (board[y][x].matchanimationframe > 0) {
+					board[y][x].matchanimationframe--;
+					if (board[y][x].matchanimationframe == 0) {
 						board[y][x] = new Block();
 						for (y2 = y - 1; y2 >= 0 && board[y2][x].canMatch(); y2--) {
 							board[y2][x].chainpowered = true;
