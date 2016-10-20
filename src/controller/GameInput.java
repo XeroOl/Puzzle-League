@@ -1,4 +1,4 @@
-package display;
+package controller;
 
 public class GameInput {
 	public boolean raisingStack;

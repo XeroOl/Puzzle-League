@@ -1,12 +1,12 @@
 import javax.swing.JFrame;
 
+import controller.GameInput;
 import display.Display;
-import display.GameInput;
-import game.Player;
+import game.GameField;
 
 public class Runner {
 	public static void main(String[] args) {
-		Player p = new Player.Builder().blockTypeCount(4).build();
+		GameField p = new GameField.Builder().blockTypeCount(4).build();
 		JFrame j = new JFrame();
 		j.setVisible(true);
 		j.setSize(500, 500);

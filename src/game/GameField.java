@@ -2,14 +2,14 @@ package game;
 
 import java.util.Random;
 
-import display.GameInput;
+import controller.GameInput;
 
 /**
  * This is area where the blocks and stuff are!
  * 
  * @author Edison
  */
-public class Player {
+public class GameField {
 	public static final int HEIGHT = 12;
 	public static final int WIDTH = 6;
 	public static final int TILESIZE = 16;
@@ -34,7 +34,7 @@ public class Player {
 	private Block[] nextrow = new Block[WIDTH];
 
 	public static class Builder {
-		private Player p = new Player();
+		private GameField p = new GameField();
 
 		public Builder setExplodeLift(boolean explodelift) {
 			p.explodelift = explodelift;
@@ -91,13 +91,13 @@ public class Player {
 			return this;
 		}
 
-		public Player build() {
+		public GameField build() {
 			p.init();
 			return p;
 		}
 	}
 
-	private Player() {
+	private GameField() {
 	}
 
 	public void init() {
@@ -117,7 +117,6 @@ public class Player {
 		animatematch(); // set above block's chain to true
 		fall();
 		match();
-
 		resetchainflag(); // set ground block's chain to false, if there is no match nor block that is chain, tell trash() to send the trash;
 		clearline();
 		trash(); //sends trash, and adds sent trash
@@ -133,10 +132,6 @@ public class Player {
 			cy--;
 		if (input.up && cy < board[0].length - 1)
 			cy++;
-	}
-
-	public Block blockAt(int x, int y) {
-		return board[y][x];
 	}
 
 	private void swap(GameInput input) {
@@ -310,6 +305,18 @@ public class Player {
 
 	private void lift(GameInput input) {
 
+	}
+
+	public int getCursorX() {
+		return cx;
+	}
+
+	public int getCursorY() {
+		return cy;
+	}
+
+	public Block blockAt(int x, int y) {
+		return board[y][x];
 	}
 
 }

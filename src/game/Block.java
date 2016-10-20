@@ -53,7 +53,7 @@ public class Block {
 	}
 
 	public int getMatchAnimationFrame() {
-		return matchanimationframe * 2 / Player.TILESIZE - matchid == 0 ? matchid * Player.TILESIZE / 2 - matchanimationframe : matchanimationframe * 2 / Player.TILESIZE - matchid > 0 ? Player.TILESIZE/2 - 1 : 0;
+		return matchanimationframe * 2 / GameField.TILESIZE - matchid == 0 ? matchid * GameField.TILESIZE / 2 - matchanimationframe : matchanimationframe * 2 / GameField.TILESIZE - matchid > 0 ? GameField.TILESIZE/2 - 1 : 0;
 	}
 
 	public boolean canMatch() {
