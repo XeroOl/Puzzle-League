@@ -49,7 +49,7 @@ public class Display extends Canvas {
 					if (b.isTrash()) {
 						//ignore it for now
 					} else if (!b.inMatchAnimation()) {
-						g.drawImage(get(themepath + "block" + b.getColor() + ".png"), x * GameField.TILESIZE + b.getSwapAnim() * 2, y * GameField.TILESIZE - b.getOffset(), null);
+						g.drawImage(get(themepath + "block" + b.getColor() + ".png"), x * GameField.TILESIZE + b.getSwapAnim() * 2, y * GameField.TILESIZE - b.getOffset() - p.getRaiseProgress(), null);
 					}
 				}
 			}
@@ -60,14 +60,14 @@ public class Display extends Canvas {
 				Block b = p.blockAt(x, y);
 				if (b.getColor() != 0) {
 					if (b.inMatchAnimation()) {
-						g.drawImage(get(themepath + "block" + b.getColor() + ".png"), x * GameField.TILESIZE + GameField.TILESIZE / 2 - b.getMatchAnimationFrame(), y * GameField.TILESIZE + GameField.TILESIZE / 2 - b.getMatchAnimationFrame(), 2 * b.getMatchAnimationFrame(), 2 * b.getMatchAnimationFrame(), null);
-						g.drawImage(get(themepath + "match" + b.getChainNum() + ".png"), x * 16, y * 16, null);
+						g.drawImage(get(themepath + "block" + b.getColor() + ".png"), x * GameField.TILESIZE + GameField.TILESIZE / 2 - b.getMatchAnimationFrame(), y * GameField.TILESIZE + GameField.TILESIZE / 2 - b.getMatchAnimationFrame() - p.getRaiseProgress(), 2 * b.getMatchAnimationFrame(), 2 * b.getMatchAnimationFrame(), null);
+						g.drawImage(get(themepath + "match" + b.getChainNum() + ".png"), x * 16, y * 16 - p.getRaiseProgress(), null);
 					}
 				}
 			}
 		}
 		g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER));
-		g.drawImage(get(themepath + "cursor.png"), p.getCursorX() * GameField.TILESIZE - GameField.TILESIZE, p.getCursorY() * GameField.TILESIZE - GameField.TILESIZE, null);
+		g.drawImage(get(themepath + "cursor.png"), p.getCursorX() * GameField.TILESIZE - GameField.TILESIZE, p.getCursorY() * GameField.TILESIZE - GameField.TILESIZE - p.getRaiseProgress(), null);
 
 		bs.show();
 		g.dispose();

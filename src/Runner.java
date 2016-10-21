@@ -34,7 +34,6 @@ public class Runner {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
-
 			}
 		}
 	}

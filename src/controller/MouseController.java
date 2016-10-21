@@ -34,19 +34,22 @@ public class MouseController extends Controller implements MouseMotionListener, 
 	@Override
 	public GameInput getInput() {
 		myInput.swapping = false;
+		if (gf.adjustY() && myInput.cy != 0) {
+			myInput.cy--;
+		}
 		if (dragging) {
+
 			label: if (delay == 0) {
-				if (mousex < myInput.cx) {
+				if (left && mousex > myInput.cx) {
+					left = false;
+				} else if (!left && mousex <= myInput.cx) {
+					left = true;
+				} else if (mousex < myInput.cx) {
 					myInput.cx--;
 					left = true;
 				} else if (mousex > myInput.cx + 1 && myInput.cx < GameField.WIDTH - 2) {
 					myInput.cx++;
 					left = false;
-				} else if (left && mousex == myInput.cx + 1) {
-					left = false;
-				} else if (!left && mousex == myInput.cx) {
-
-					left = true;
 				} else {
 					break label;
 				}
@@ -62,7 +65,7 @@ public class MouseController extends Controller implements MouseMotionListener, 
 
 	@Override
 	public void mouseDragged(MouseEvent e) {
-		mousex = (int) (e.getX() / Display.scale / GameField.TILESIZE);
+		mousex = verifyx((int) (e.getX() / Display.scale / GameField.TILESIZE));
 
 	}
 

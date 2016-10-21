@@ -110,6 +110,7 @@ public class GameField {
 				board[y][x].color = r.nextInt(blocktypecount);
 			}
 		}
+		generateNextRow();
 	}
 
 	public void update(final GameInput input) {
@@ -162,7 +163,6 @@ public class GameField {
 				}
 			}
 		}
-
 	}
 
 	private void fall() {
@@ -304,7 +304,10 @@ public class GameField {
 	}
 
 	private void lift(GameInput input) {
-		raise: if (raise && liftmultiplier != 0) {
+		if (input.raisingStack) {
+			stopframes = 0;
+			raiseprogress++;
+		} else if (raise && liftmultiplier != 0) {
 			if (stopframes > 0) {
 				stopframes--;
 			} else {
@@ -312,26 +315,35 @@ public class GameField {
 				if (raiseframecounter > liftmultiplier) {
 					raiseframecounter = 0;
 					raiseprogress++;
-					if (raiseprogress == TILESIZE) {
-						raiseprogress = 0;
-						for (int x = 0; x < GameField.WIDTH; x++) {
-							if (board[0][x].isSolid()) {
-								//gameover
-								break raise;
-							}
-						}
-						for (int y = 0; y < GameField.HEIGHT - 1; y++) {
-							board[y] = board[y + 1];
-						}
-						board[GameField.HEIGHT - 1] = nextrow;
-						nextrow = new Block[GameField.WIDTH];
-						for (int x = 0; x < GameField.WIDTH; x++) {
-							nextrow[x] = new Block();
-							nextrow[x].color = 1 + r.nextInt(blocktypecount - 1);
-						}
-					}
+
 				}
 			}
+		}
+		if (raiseprogress == TILESIZE) {
+			raiseprogress = 0;
+			for (int x = 0; x < GameField.WIDTH; x++) {
+				if (board[0][x].isSolid()) {
+					//gameover 
+					return;
+				}
+			}
+			cy--;
+			coordshifted = true;
+			for (int y = 0; y < GameField.HEIGHT - 1; y++) {
+				board[y] = board[y + 1];
+			}
+			board[GameField.HEIGHT - 1] = nextrow;
+			generateNextRow();
+		} else {
+			coordshifted = false;
+		}
+	}
+
+	private void generateNextRow() {
+		nextrow = new Block[GameField.WIDTH];
+		for (int x = 0; x < GameField.WIDTH; x++) {
+			nextrow[x] = new Block();
+			nextrow[x].color = 1 + r.nextInt(blocktypecount - 1);
 		}
 	}
 
@@ -341,6 +353,12 @@ public class GameField {
 
 	public int getCursorY() {
 		return cy;
+	}
+
+	boolean coordshifted = false;
+
+	public boolean adjustY() {
+		return coordshifted;
 	}
 
 	public Block blockAt(int x, int y) {
