@@ -1,33 +1,22 @@
+import game.GameField;
+
 import javax.swing.JFrame;
 
 import controller.GameInput;
+import controller.MouseController;
 import display.Display;
-import game.GameField;
 
 public class Runner {
 	public static void main(String[] args) {
-		GameField p = new GameField.Builder().blockTypeCount(4).build();
+		GameField gf = new GameField.Builder().blockTypeCount(4).build();
 		JFrame j = new JFrame();
 		j.setVisible(true);
 		j.setSize(500, 500);
 		j.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		Display d = new Display();
 		j.add(d);
-		GameInput g = new GameInput();
-		g.down = false;
-		g.left = false;
-		g.right = false;
-		g.up = false;
-		g.swapping = false;
-		g.raisingStack = false;
-		p.update(g);
-		d.update(p);
-		try {
-			Thread.sleep(5000);
-		} catch (InterruptedException e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
-		}
+		MouseController m = new MouseController(d, gf);
+		GameInput g = m.getInput();
 		long time = System.currentTimeMillis();
 		long wait = 1000 / 30;
 		long now;
@@ -35,8 +24,9 @@ public class Runner {
 			now = System.currentTimeMillis();
 			if (now > time + wait) {
 				time += wait;
-				p.update(g);
-				d.update(p);
+				g = m.getInput();
+				gf.update(g);
+				d.update(gf);
 			} else {
 				try {
 					Thread.sleep(time + wait - now);

@@ -19,7 +19,7 @@ public class GameField {
 	private int blocktypecount = 5; //number of unique types of blocks
 	private int maxtrashheight = 100; //number of lines of trash above top of screen before player loses
 	private int stoptimermultiplier = 1; // 1 = normal, 0 = instakill, -1 = infinite time
-	private int liftmultiplier = 0; // 0 = no lift, -n = lift n per frame, n = lift n+f per frame
+	private int liftmultiplier = 16; // 0 = no lift, n = lift 1 in n frames
 	private int trashbreakstrategy = 0; // 0 = default, 1 = like in nanoha puzzle league
 	private boolean trashenabled = true;
 	private int clearline = -1; // line to clear by, where -1 is disabled;
@@ -30,6 +30,9 @@ public class GameField {
 	private Block[][] board = new Block[HEIGHT][WIDTH];
 	private int cx = WIDTH / 2 - 1, cy = HEIGHT / 2;
 	private int mychain = 1;
+	int stopframes = 0;
+	int raiseframecounter = 0;
+	int raiseprogress = 0;
 	private boolean raise = true; // set to false if anything at all should stop the stack from raising
 	private Block[] nextrow = new Block[WIDTH];
 
@@ -104,7 +107,7 @@ public class GameField {
 		for (int x = 0; x < WIDTH; x++) {
 			for (int y = 0; y < HEIGHT; y++) {
 				board[y][x] = new Block();
-				board[y][x].color = r.nextInt(4);
+				board[y][x].color = r.nextInt(blocktypecount);
 			}
 		}
 	}
@@ -124,14 +127,8 @@ public class GameField {
 	}
 
 	private void cursor(GameInput input) {
-		if (input.left && cx > 0)
-			cx--;
-		if (input.right && cx < board.length - 2)
-			cx++;
-		if (input.down && cy > 0)
-			cy--;
-		if (input.up && cy < board[0].length - 1)
-			cy++;
+		cx = input.cx;
+		cy = input.cy;
 	}
 
 	private void swap(GameInput input) {
@@ -175,6 +172,7 @@ public class GameField {
 				if (board[y][x].canSwap() && board[y][x].color != 0) {
 					board[y][x].inair = (board[y][x].inair && board[y][x].offset > 0) || (y != HEIGHT - 1 && !board[y + 1][x].isSolid());
 					if (board[y][x].inair) {
+						raise = false;
 						if (fallspeed == -1)
 							board[y][x].offset -= TILESIZE;
 						else {
@@ -228,6 +226,7 @@ public class GameField {
 			}
 		}
 		if (ismatch) {
+			raise = false;
 			if (ischainmatch) {
 				mychain++;
 			}
@@ -262,6 +261,7 @@ public class GameField {
 		for (int y = 0; y < HEIGHT; y++) {
 			for (int x = 0; x < WIDTH; x++) {
 				if (board[y][x].matchanimationframe > 0) {
+					raise = false;
 					board[y][x].matchanimationframe--;
 					if (board[y][x].matchanimationframe == 0) {
 						board[y][x] = new Block();
@@ -304,7 +304,35 @@ public class GameField {
 	}
 
 	private void lift(GameInput input) {
-
+		raise: if (raise && liftmultiplier != 0) {
+			if (stopframes > 0) {
+				stopframes--;
+			} else {
+				raiseframecounter++;
+				if (raiseframecounter > liftmultiplier) {
+					raiseframecounter = 0;
+					raiseprogress++;
+					if (raiseprogress == TILESIZE) {
+						raiseprogress = 0;
+						for (int x = 0; x < GameField.WIDTH; x++) {
+							if (board[0][x].isSolid()) {
+								//gameover
+								break raise;
+							}
+						}
+						for (int y = 0; y < GameField.HEIGHT - 1; y++) {
+							board[y] = board[y + 1];
+						}
+						board[GameField.HEIGHT - 1] = nextrow;
+						nextrow = new Block[GameField.WIDTH];
+						for (int x = 0; x < GameField.WIDTH; x++) {
+							nextrow[x] = new Block();
+							nextrow[x].color = 1 + r.nextInt(blocktypecount - 1);
+						}
+					}
+				}
+			}
+		}
 	}
 
 	public int getCursorX() {
@@ -317,6 +345,10 @@ public class GameField {
 
 	public Block blockAt(int x, int y) {
 		return board[y][x];
+	}
+
+	public int getRaiseProgress() {
+		return raiseprogress;
 	}
 
 }

@@ -16,6 +16,7 @@ import java.util.Map;
 import javax.imageio.ImageIO;
 
 public class Display extends Canvas {
+	public static double scale = 2.0;
 	/**
 	 * 
 	 */
@@ -37,7 +38,8 @@ public class Display extends Canvas {
 		}
 		Graphics2D g = (Graphics2D) bs.getDrawGraphics();
 		g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC));
-		g.scale(2.0, 2.0);
+		g.scale(scale, scale);
+
 		g.drawImage(get(themepath + "background1.png"), 0, 0, null);
 
 		for (int x = 0; x < GameField.WIDTH; x++) {
@@ -66,6 +68,7 @@ public class Display extends Canvas {
 		}
 		g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER));
 		g.drawImage(get(themepath + "cursor.png"), p.getCursorX() * GameField.TILESIZE - GameField.TILESIZE, p.getCursorY() * GameField.TILESIZE - GameField.TILESIZE, null);
+
 		bs.show();
 		g.dispose();
 

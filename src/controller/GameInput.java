@@ -1,10 +1,8 @@
 package controller;
 
 public class GameInput {
-	public boolean raisingStack;
-	public boolean left;
-	public boolean right;
-	public boolean up;
-	public boolean down;
+	public int cx;
+	public int cy;
 	public boolean swapping;
+	public boolean raisingStack;
 }
