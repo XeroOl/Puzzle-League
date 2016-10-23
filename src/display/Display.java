@@ -56,7 +56,7 @@ public class Display extends Canvas {
 		g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER));
 		drawTiles(g, gf);
 		g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, .6f));
-		darkenBottomTiles(g, gf);
+		darkenTiles(g, gf);
 		fixGarbageTiles(g, gf);
 		g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, .3f));
 		drawMatchingTiles(g, gf);
@@ -88,10 +88,11 @@ public class Display extends Canvas {
 
 	}
 
-	private void darkenBottomTiles(Graphics2D g, GameField gf) {
+	private void darkenTiles(Graphics2D g, GameField gf) {
 
 		for (int x = 0; x < GameField.WIDTH; x++) {
-			drawBlock(g, (x + OFFSET_X) * TILESIZE, (GameField.HEIGHT + OFFSET_Y) * TILESIZE - gf.getRaiseProgress(), getBlockX(31), getBlockY(31));
+			for (int y = 0; gf.isGameOver() && y <= GameField.HEIGHT; y++)
+				drawBlock(g, (x + OFFSET_X) * TILESIZE, (y + OFFSET_Y) * TILESIZE - gf.getRaiseProgress(), getBlockX(31), getBlockY(31));
 		}
 	}
 

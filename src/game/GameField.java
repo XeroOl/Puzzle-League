@@ -49,7 +49,7 @@ public class GameField {
 	private boolean forcelift = false;
 	private Block[] nextrow = new Block[WIDTH];
 	private boolean oddframe = false;
-	boolean gameover = false;
+	private boolean gameover = false;
 	Queue<Integer> combos = new ArrayDeque<Integer>();
 	Queue<Trash> mytrash = new ArrayDeque<Trash>();
 
@@ -348,7 +348,7 @@ public class GameField {
 	}
 
 	private void clearline() {
-
+		//coming soon
 	}
 
 	private void trash() {
@@ -488,7 +488,7 @@ public class GameField {
 		} while (collapsed < WIDTH);
 	}
 
-	static int falsecount(boolean[] b) {
+	private static int falsecount(boolean[] b) {
 		int count = 0;
 		for (int i = 0; i < b.length; i++) {
 			if (!b[i])
@@ -497,7 +497,7 @@ public class GameField {
 		return count;
 	}
 
-	static int indexofonlyfalse(boolean[] b) {
+	private static int indexofonlyfalse(boolean[] b) {
 
 		int i;
 		for (i = 0; i < b.length && b[i]; i++)
@@ -521,7 +521,7 @@ public class GameField {
 		return cy;
 	}
 
-	boolean coordshifted = false;
+	private boolean coordshifted = false;
 
 	public boolean adjustY() {
 		return coordshifted;
@@ -545,6 +545,10 @@ public class GameField {
 
 	public int getFallSpeedDivisor() {
 		return fallspeeddivisor;
+	}
+
+	public boolean isGameOver() {
+		return gameover;
 	}
 
 }
