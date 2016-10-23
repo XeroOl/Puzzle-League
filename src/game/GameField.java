@@ -132,6 +132,13 @@ public class GameField {
 				board[y][x] = new Block();
 			}
 		}
+		//This code is just for testing purposes. Of course trash isn't intended to appear atop the starting stack. I just need an easy way to test trash rendering/physics
+		board[HEIGHT - 1][0].trash = true;
+		board[HEIGHT - 1][0].trashtype = 0;
+		board[HEIGHT - 1][1].trash = true;
+		board[HEIGHT - 1][1].trashtype = 1;
+		board[HEIGHT - 1][2].trash = true;
+		board[HEIGHT - 1][2].trashtype = 2;
 		generateNextRow();
 		for (int h = 0; h < blockstartheight; h++) {
 			for (int y = 0; y < HEIGHT - 1; y++) {
@@ -205,10 +212,10 @@ public class GameField {
 	}
 
 	private void fall() {
-
 		for (int y = HEIGHT - 1; y >= 0; y--) {
+			//Calculate fall amount and offset
 			for (int x = 0; x < WIDTH; x++) {
-				if (board[y][x].canSwap() && board[y][x].color != 0) {
+				if (!board[y][x].inAnimation() && (board[y][x].trash || board[y][x].color != 0)) {
 					board[y][x].inair = (board[y][x].inair && board[y][x].offset > 0) || (y != HEIGHT - 1 && !board[y + 1][x].isSolid());
 					if (board[y][x].inair) {
 						raise = false;
@@ -225,18 +232,43 @@ public class GameField {
 							board[y][x].offset = board[y + 1][x].offset;
 							board[y][x].veldown = board[y + 1][x].veldown;
 						}
-						if (board[y][x].offset < 0) {
-							if (y != HEIGHT - 1 && !board[y + 1][x].isSolid()) {
-								Block temp = board[y + 1][x];
-								board[y + 1][x] = board[y][x];
-								board[y][x] = temp;
-								board[y + 1][x].offset += fallspeeddivisor;
-							} else {
-								board[y][x].offset = 0;
-								board[y][x].veldown = 0;
-							}
+						if (board[y][x].offset < 0 && (y == HEIGHT - 1 || board[y + 1][x].isSolid())) {
+							board[y][x].offset = 0;
+							board[y][x].veldown = 0;
+
 						}
 					}
+				}
+			}
+			//sync movement across trash
+			for (int x = 0; x < WIDTH; x++) {
+				if (!board[y][x].inAnimation() && board[y][x].trash && board[y][x].trashtype % 3 == 0) {
+					//we've found the start of a trash block! iterate through to find the correct synchronized values, and store them in board[y][x]
+
+					for (int x2 = x + 1; x2 < WIDTH; x2++) {
+						board[y][x].inair &= board[y][x2].inair;
+						board[y][x].offset = board[y][x].offset >= board[y][x2].offset ? board[y][x].offset : board[y][x2].offset;
+						board[y][x].veldown = board[y][x].veldown <= board[y][x2].veldown ? board[y][x].veldown : board[y][x2].veldown;
+						if (board[y][x2].trashtype % 3 == 2)
+							break;
+					}//distribute correct values to all of trash
+					for (int x2 = x + 1; x2 < WIDTH; x2++) {
+						board[y][x2].inair = board[y][x].inair;
+						board[y][x2].offset = board[y][x].offset;
+						board[y][x2].veldown = board[y][x].veldown;
+						if (board[y][x2].trashtype % 3 == 2)
+							break;
+
+					}
+				}
+			}
+			//move blocks down if neccesary
+			for (int x = 0; x < WIDTH; x++) {
+				if (board[y][x].offset < 0) {
+					Block temp = board[y + 1][x];
+					board[y + 1][x] = board[y][x];
+					board[y][x] = temp;
+					board[y + 1][x].offset += fallspeeddivisor;
 				}
 			}
 		}

@@ -31,7 +31,7 @@ public class Block {
 	}
 
 	public boolean isSolid() {
-		return !(color == 0 && !inAnimation());
+		return !(!trash&&color == 0 && !inAnimation());
 	}
 
 	public int getColor() {
