@@ -30,7 +30,7 @@ public class GameField {
 	private boolean combotrashontop = true; // when a player makes a combo during a chain, should the trash for the combo be saved until after the chain trash is sent?
 	/*------------------------------*NON-OPTIONS*------------------------------*/
 	private int stoptimecombo = 1;
-	private int stoptimechain = 4;
+	private int stoptimechain = 10;
 	private int stoptimebuffer = 5;
 	private int stoptimemax = 960;
 	private int blockstartheight = 5;
@@ -48,10 +48,12 @@ public class GameField {
 	private boolean raise = true; // set to false if anything at all should stop the stack from raising
 	private boolean forcelift = false;
 	private Block[] nextrow = new Block[WIDTH];
-	private boolean oddframe = false;
+	private Block[] trashrow = new Block[WIDTH];
+	private boolean trashrowvalid = false;
 	private boolean gameover = false;
-	Queue<Integer> combos = new ArrayDeque<Integer>();
-	Queue<Trash> mytrash = new ArrayDeque<Trash>();
+	Queue<Trash> trashoutput = new ArrayDeque<Trash>();
+	Queue<Trash> combotrashoutput = new ArrayDeque<Trash>();
+	ArrayDeque<Trash> trashinput = new ArrayDeque<Trash>();
 
 	public static class Builder {
 		private GameField p = new GameField();
@@ -132,13 +134,8 @@ public class GameField {
 				board[y][x] = new Block();
 			}
 		}
-		//This code is just for testing purposes. Of course trash isn't intended to appear atop the starting stack. I just need an easy way to test trash rendering/physics
-		board[HEIGHT - 1][0].trash = true;
-		board[HEIGHT - 1][0].trashtype = 0;
-		board[HEIGHT - 1][1].trash = true;
-		board[HEIGHT - 1][1].trashtype = 1;
-		board[HEIGHT - 1][2].trash = true;
-		board[HEIGHT - 1][2].trashtype = 2;
+		
+
 		generateNextRow();
 		for (int h = 0; h < blockstartheight; h++) {
 			for (int y = 0; y < HEIGHT - 1; y++) {
@@ -151,7 +148,6 @@ public class GameField {
 
 	public void update(final GameInput input) {
 		if (!gameover) {
-			oddframe ^= true;
 			raise = true;
 			cursor(input);
 			swap(input);
@@ -175,7 +171,8 @@ public class GameField {
 
 	private void swap(GameInput input) {
 		if (input.swapping) {
-			if (board[cy][cx].canSwap() && board[cy][cx + 1].canSwap()) {
+			// Don't swap two air blocks!! they would become solid, which can gameover you if you swap air at the top of the screen
+			if (board[cy][cx].canSwap() && board[cy][cx + 1].canSwap() && (board[cy][cx].color != 0 || board[cy][cx + 1].color != 0)) {
 				board[cy][cx].swapAnim = 4;
 				board[cy][cx + 1].swapAnim = -4;
 			}
@@ -216,9 +213,8 @@ public class GameField {
 			//Calculate fall amount and offset
 			for (int x = 0; x < WIDTH; x++) {
 				if (!board[y][x].inAnimation() && (board[y][x].trash || board[y][x].color != 0)) {
-					board[y][x].inair = (board[y][x].inair && board[y][x].offset > 0) || (y != HEIGHT - 1 && !board[y + 1][x].isSolid());
+					board[y][x].inair = (board[y][x].offset > 0) || (y != HEIGHT - 1 && !(board[y + 1][x].isSolid() && !board[y + 1][x].inair));
 					if (board[y][x].inair) {
-						raise = false;
 						if (fallspeed == -1)
 							board[y][x].offset -= fallspeeddivisor;
 						else {
@@ -228,14 +224,14 @@ public class GameField {
 							board[y][x].offset -= board[y][x].veldown;
 
 						}
-						if (y != HEIGHT - 1 && board[y + 1][x].isSolid() && board[y + 1][x].offset > board[y][x].offset && board[y][x].veldown >= board[y + 1][x].veldown) {
+						if (y != HEIGHT - 1 && board[y + 1][x].isSolid() && board[y + 1][x].inair && board[y + 1][x].offset > board[y][x].offset && board[y][x].veldown >= board[y + 1][x].veldown) {
 							board[y][x].offset = board[y + 1][x].offset;
 							board[y][x].veldown = board[y + 1][x].veldown;
 						}
 						if (board[y][x].offset < 0 && (y == HEIGHT - 1 || board[y + 1][x].isSolid())) {
+							board[y][x].inair = false;
 							board[y][x].offset = 0;
 							board[y][x].veldown = 0;
-
 						}
 					}
 				}
@@ -264,6 +260,9 @@ public class GameField {
 			}
 			//move blocks down if neccesary
 			for (int x = 0; x < WIDTH; x++) {
+				if (board[y][x].inair) {
+					raise = false;
+				}
 				if (board[y][x].offset < 0) {
 					Block temp = board[y + 1][x];
 					board[y + 1][x] = board[y][x];
@@ -271,12 +270,31 @@ public class GameField {
 					board[y + 1][x].offset += fallspeeddivisor;
 				}
 			}
+		}//move trash from trashrow
+		if (trashenabled && trashrowvalid && !touchingTop()) {
+			for (int x = 0; x < WIDTH; x++) {
+				if (trashrow[x].trash) {
+					board[0][x] = trashrow[x];
+					if (fallspeed == -1) {
+
+					} else {
+						if (board[0][x].veldown != 0)
+							board[0][x].offset = board[1][x].offset;
+						else {
+							board[0][x].offset = fallspeeddivisor;
+						}
+					}
+				}
+			}
+			trashrowvalid = false;
 		}
+
 	}
 
 	private void match() {
 		boolean ischainmatch = false;
 		boolean ismatch = false;
+		/**************VERTICAL DETECT PHASE*************/
 		for (int y = 1; y < HEIGHT - 1; y++) {
 			for (int x = 0; x < WIDTH; x++) {
 				//vertical
@@ -289,6 +307,7 @@ public class GameField {
 				}
 			}
 		}
+		/**************HORIZONTAL DETECT PHASE*************/
 		for (int y = 0; y < HEIGHT; y++) {
 			for (int x = 1; x < WIDTH - 1; x++) {
 				//horizontal
@@ -302,9 +321,11 @@ public class GameField {
 			}
 		}
 		if (ismatch) {
+			/**************BLOCK MATCH COUNT PHASE*************/
 			raise = false;
 			if (ischainmatch) {
 				mychain++;
+				stopframes += stoptimermultiplier * stoptimechain;
 			}
 			int count = 0;
 			for (int y = 0; y < HEIGHT; y++) {
@@ -318,18 +339,89 @@ public class GameField {
 					}
 				}
 			}
+			/**************TRASH DETECT PHASE*************/
 			for (int y = 0; y < HEIGHT; y++) {
 				for (int x = 0; x < WIDTH; x++) {
 					if (board[y][x].matchanimationframe == -2) {
+						if (x != 0 && board[y][x - 1].isTrash() && board[y][x - 1].inMatchAnimation() == false && !board[y][x - 1].inair)
+							board[y][x - 1].matchanimationframe = -2;
 
+						if (x != WIDTH - 1 && board[y][x + 1].isTrash() && board[y][x + 1].inMatchAnimation() == false && !board[y][x + 1].inair)
+							board[y][x + 1].matchanimationframe = -2;
+						if (y != 0 && board[y - 1][x].isTrash() && board[y - 1][x].inMatchAnimation() == false && !board[y - 1][x].inair)
+							board[y - 1][x].matchanimationframe = -2;
+						if (y != HEIGHT - 1 && board[y + 1][x].isTrash() && board[y + 1][x].inMatchAnimation() == false && !board[y - 1][x].inair)
+							board[y + 1][x].matchanimationframe = -2;
+					}
+				}
+			}
+			/**************TRASH SPREAD PHASE*************/
+			int trashcount = 0;
+			for (int y = 0; y < HEIGHT; y++) {
+				for (int x = 0; x < WIDTH; x++) {
+					if (board[y][x].isTrash() && board[y][x].matchanimationframe == -2) {
+						trashcount += spreadmatchtrash(x, y);
+					}
+				}
+			}
+			/**************TRASH FINALIZE PHASE*************/
+			for (int y = 0; y < HEIGHT; y++) {
+				for (int x = 0; x < WIDTH; x++) {
+					if (board[y][x].matchanimationframe == -3) {
+						board[y][x].matchanimationframe = trashcount * TILESIZE / 2 + 30;
+					}
+				}
+			}
+			/**************BLOCK FINALIZE PHASE*************/
+			for (int y = 0; y < HEIGHT; y++) {
+				for (int x = 0; x < WIDTH; x++) {
+					if (board[y][x].matchanimationframe == -2) {
 						board[y][x].matchanimationframe = count * TILESIZE / 2 + 30;
 					}
 				}
 			}
 			if (count > 3) {
 				stopframes += stoptimermultiplier * stoptimecombo * count;
-				combos.add(count > 6 ? 6 : count - 1);
+				combotrashoutput.add(new Trash(0, count > WIDTH ? WIDTH : count - 1, player));
 			}
+
+		}
+	}
+
+	/**
+	 * only called from the match() method. don't call in update order
+	 */
+	private int spreadmatchtrash(int x, int y) {
+		if (board[y][x].matchanimationframe != -3) {
+			board[y][x].matchanimationframe = -3;
+			int count = 1;
+			if (x != 0 && (board[y][x].trashtype % 3 != 0 || (board[y][x - 1].trash && (multiplayertrashmetal ? board[y][x - 1].color == board[y][x].color : board[y][x - 1].color == 0)))) {
+				count += spreadmatchtrash(x - 1, y);
+			}
+			if (x != WIDTH - 1 && (board[y][x].trashtype % 3 != 2 || (board[y][x + 1].trash && (multiplayertrashmetal ? board[y][x + 1].color == board[y][x].color : board[y][x + 1].color == 0)))) {
+				count += spreadmatchtrash(x + 1, y);
+			}
+			if (y != HEIGHT - 1 && ((board[y][x].trashtype / 3 != 0 && board[y][x].trashtype / 3 != 3) || (board[y + 1][x].trash && (multiplayertrashmetal ? board[y + 1][x].color == board[y][x].color : board[y + 1][x].color == 0)))) {
+				count += spreadmatchtrash(x, y + 1);
+			}
+			if (y == 0) {
+				processtrashqueue(board[y][x].color);
+			}
+			if (y != 0 && ((board[y][x].trashtype / 3 != 0 && board[y][x].trashtype / 3 != 1) || (board[y - 1][x].trash && (multiplayertrashmetal ? board[y - 1][x].color == board[y][x].color : board[y - 1][x].color == 0)))) {
+				count += spreadmatchtrash(x, y - 1);
+			}
+			return count;
+		}
+		return 0;
+	}
+
+	private void processtrashqueue(int color) {
+		if (!trashinput.isEmpty()) {
+			Trash t = trashinput.peek();
+			if (t.type == 1)
+				t.type = 0;
+			if (t.type == 2)
+				t.type = 3;
 		}
 	}
 
@@ -341,7 +433,12 @@ public class GameField {
 					raise = false;
 					board[y][x].matchanimationframe--;
 					if (board[y][x].matchanimationframe == 0) {
-						board[y][x] = new Block();
+						if (board[y][x].trash) {
+							board[y][x] = new Block();
+							board[y][x].color = r.nextInt(colorcount) + 1;
+						} else {
+							board[y][x] = new Block();
+						}
 						for (y2 = y - 1; y2 >= 0 && board[y2][x].canMatch(); y2--) {
 							board[y2][x].chainpowered = true;
 						}
@@ -367,15 +464,21 @@ public class GameField {
 		}
 		if (!keep) {
 			if (mychain > 1) {
-				stopframes += stoptimermultiplier * stoptimechain * mychain;
-				System.out.println("send a trash because of x" + mychain + " chain");
+				if (mychain == 2) {
+					trashoutput.add(new Trash(0, WIDTH, player));
+				} else {
+					trashoutput.add(new Trash(3, WIDTH, player));
+					for (int i = 2; i < mychain - 1; i++) {
+						trashoutput.add(new Trash(2, WIDTH, player));
+					}
+					trashoutput.add(new Trash(1, WIDTH, player));
+				}
 			}
 			mychain = 1;
 		}
-		while (!combotrashontop && !combos.isEmpty()) {
-			Trash t = new Trash();
-			combos.poll();
-
+		if ((!combotrashontop || !keep) && !combotrashoutput.isEmpty()) {
+			trashoutput.addAll(combotrashoutput);
+			combotrashoutput.clear();
 		}
 	}
 
@@ -384,12 +487,40 @@ public class GameField {
 	}
 
 	private void trash() {
+		if (!trashoutput.isEmpty()) {
+			trashinput.add(trashoutput.poll());
+		}
+		if (!trashrowvalid && !trashinput.isEmpty()) {
+			Trash t = trashinput.poll();
+			if (t.type == 0 || t.type == 3) {
+				offset = r.nextInt(WIDTH - t.width + 1);
+			}
+			for (int x = 0; x < WIDTH; x++) {
+				trashrow[x] = new Block();
+			}
+			trashrow[offset] = new Block(t.color, true, t.type * 3);
+			for (int x = offset + 1; x < offset + t.width - 1; x++) {
+				trashrow[x] = new Block(t.color, true, t.type * 3 + 1);
+
+			}
+
+			trashrow[offset + t.width - 1] = new Block(t.color, true, t.type * 3 + 2);
+			for (int x = 0; x < WIDTH; x++) {
+				if (trashrow[x].isTrash() && (t.type == 1 || t.type == 2)) {
+					trashrow[x].veldown = fallspeeddivisor;
+				}
+			}
+			raise = false;
+			trashrowvalid = true;
+		}
 
 	}
 
+	private int offset = 0;
+
 	private void lift(GameInput input) {
 		if (forcelift || input.raisingStack && (explodelift || raise) && !touchingTop()) {
-			stopframes = 0;
+			stopframes /= 2;
 			raiseprogress++;
 			forcelift = true;
 		} else if (raise && liftmultiplier > 0 && stoptimermultiplier != -1) {
@@ -453,6 +584,10 @@ public class GameField {
 				map[x][board[HEIGHT - 1][x].color - 1] = true;
 			}
 		}
+		collapse(map, nextrow);
+	}
+
+	private static void collapse(boolean[][] map, Block[] row) {
 		boolean changehappened = false;
 		int collapsed = 0;
 		do {
@@ -460,10 +595,10 @@ public class GameField {
 				changehappened = false;
 				//collapse anything collapsable
 				for (int x = 0; x < WIDTH; x++) {
-					if (nextrow[x].color == 0) {
+					if (row[x].color == 0) {
 						int val = indexofonlyfalse(map[x]);
 						if (val != -1) {
-							nextrow[x].color = val + 1;
+							row[x].color = val + 1;
 							changehappened = true;
 							collapsed++;
 						}
@@ -474,10 +609,10 @@ public class GameField {
 					int color = 0;
 					int encountered = 0;
 					for (int x2 = x; x2 < x + 3; x2++) {
-						if (nextrow[x2].color != 0) {
+						if (row[x2].color != 0) {
 							if (color == 0)
-								color = nextrow[x2].color;
-							else if (color != nextrow[x2].color)
+								color = row[x2].color;
+							else if (color != row[x2].color)
 								continue loop;
 							encountered++;
 						}
@@ -498,13 +633,13 @@ public class GameField {
 			}
 			int nextcollapse = r.nextInt(WIDTH - collapsed);
 			out: for (int x = 0; x < WIDTH; x++) {
-				if (nextrow[x].color == 0) {
+				if (row[x].color == 0) {
 					if (nextcollapse == 0) {
 						int val = r.nextInt(falsecount(map[x]));
-						for (int y = 0; y < colorcount; y++) {
+						for (int y = 0; y < map[0].length; y++) {
 							if (!map[x][y]) {
 								if (val == 0) {
-									nextrow[x].color = y + 1;
+									row[x].color = y + 1;
 									collapsed++;
 									break out;
 								} else {
@@ -568,7 +703,7 @@ public class GameField {
 	}
 
 	public int getGarbageAmount() {
-		return mytrash.size() * 48 / maxtrashheight;
+		return trashinput.size() * 48 / maxtrashheight;
 	}
 
 	public int getStopTime() {

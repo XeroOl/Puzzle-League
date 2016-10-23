@@ -11,8 +11,17 @@ public class Block {
 	int chainnum = 0;
 	byte swapAnim = 0;
 	int offset = 0;
-	int matchanimationframe = -1;
+	int matchanimationframe = -1; // -1 means not matching, if >0, its how many frames till this block breaks
 	int matchid = -1;
+
+	public Block() {
+	};
+
+	public Block(int color, boolean trash, int trashtype) {
+		this.color = color;
+		this.trash = trash;
+		this.trashtype = trashtype;
+	}
 
 	public boolean canSwap() {
 		return (!trash && !inAnimation());
@@ -31,7 +40,7 @@ public class Block {
 	}
 
 	public boolean isSolid() {
-		return !(!trash&&color == 0 && !inAnimation());
+		return !(!trash && color == 0 && !inAnimation());
 	}
 
 	public int getColor() {

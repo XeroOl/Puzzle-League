@@ -55,7 +55,7 @@ public class Display extends Canvas {
 		drawBackground(g, gf);
 		g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER));
 		drawTiles(g, gf);
-		g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, .6f));
+		g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, .7f));
 		darkenTiles(g, gf);
 		fixGarbageTiles(g, gf);
 		g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, .3f));
@@ -81,17 +81,15 @@ public class Display extends Canvas {
 					drawPlayer(g, x * TILESIZE + TILESIZE * OFFSET_X, y * TILESIZE - b.getOffset() * TILESIZE / gf.getFallSpeedDivisor() - gf.getRaiseProgress() + TILESIZE * OFFSET_Y, getPlayerX(b.getColor()), getPlayerY(b.getColor()));
 				} else if (b.getColor() != 0 && !b.inMatchAnimation()) {
 					drawBlock(g, x * TILESIZE + b.getSwapAnim() * 2 + TILESIZE * OFFSET_X, y * TILESIZE - b.getOffset() * TILESIZE / gf.getFallSpeedDivisor() - gf.getRaiseProgress() + TILESIZE * OFFSET_Y, getBlockX(b.getColor()), getBlockY(b.getColor()));
-
 				}
 			}
 		}
-
 	}
 
 	private void darkenTiles(Graphics2D g, GameField gf) {
-
 		for (int x = 0; x < GameField.WIDTH; x++) {
-			for (int y = 0; gf.isGameOver() && y <= GameField.HEIGHT; y++)
+			drawBlock(g, (x + OFFSET_X) * TILESIZE, (GameField.HEIGHT + OFFSET_Y) * TILESIZE - gf.getRaiseProgress(), getBlockX(31), getBlockY(31));
+			for (int y = 0; gf.isGameOver() && y < GameField.HEIGHT; y++)
 				drawBlock(g, (x + OFFSET_X) * TILESIZE, (y + OFFSET_Y) * TILESIZE - gf.getRaiseProgress(), getBlockX(31), getBlockY(31));
 		}
 	}
@@ -100,7 +98,7 @@ public class Display extends Canvas {
 		for (int x = 0; x < GameField.WIDTH; x++) {
 			for (int y = 0; y <= GameField.HEIGHT; y++) {
 				Block b = gf.blockAt(x, y);
-				if (b.isTrash()) {
+				if (b.isTrash() && !b.inMatchAnimation()) {
 					drawPlayer(g, x * TILESIZE + TILESIZE * OFFSET_X, y * TILESIZE - b.getOffset() * TILESIZE / gf.getFallSpeedDivisor() - gf.getRaiseProgress() + TILESIZE * OFFSET_Y, getTrashX(b.getTrashType()), getTrashY(b.getTrashType()));
 				}
 			}
@@ -248,7 +246,7 @@ public class Display extends Canvas {
 	}
 
 	private static int getPlayerY(int id) {
-		return 3 + id / 4;
+		return id / 4;
 	}
 
 	private static int getTrashX(int id) {
