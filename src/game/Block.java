@@ -6,9 +6,11 @@ public class Block {
 	boolean trash = false;
 	boolean inair = false;
 	boolean chainpowered = false;
+	boolean removechainpower = false;
+	int trashtype = 0;
 	int chainnum = 0;
 	byte swapAnim = 0;
-	byte offset = 0;
+	int offset = 0;
 	int matchanimationframe = -1;
 	int matchid = -1;
 
@@ -17,11 +19,15 @@ public class Block {
 	}
 
 	public boolean inAnimation() {
-		return !(matchanimationframe < 0 && swapAnim == 0);
+		return !(matchanimationframe <= 0 && swapAnim == 0);
 	}
 
 	public boolean inMatchAnimation() {
 		return matchanimationframe > 0;
+	}
+
+	public boolean inSwapAnimation() {
+		return swapAnim != 0;
 	}
 
 	public boolean isSolid() {
@@ -48,12 +54,12 @@ public class Block {
 		return swapAnim;
 	}
 
-	public byte getOffset() {
+	public int getOffset() {
 		return offset;
 	}
 
 	public int getMatchAnimationFrame() {
-		return matchanimationframe * 2 / GameField.TILESIZE - matchid == 0 ? matchid * GameField.TILESIZE / 2 - matchanimationframe : matchanimationframe * 2 / GameField.TILESIZE - matchid > 0 ? GameField.TILESIZE/2 - 1 : 0;
+		return matchanimationframe * 2 / GameField.TILESIZE - matchid == 0 ? matchid * GameField.TILESIZE / 2 - matchanimationframe : matchanimationframe * 2 / GameField.TILESIZE - matchid > 0 ? GameField.TILESIZE / 2 - 1 : 0;
 	}
 
 	public boolean canMatch() {
@@ -66,5 +72,9 @@ public class Block {
 
 	public int getChainNum() {
 		return chainnum;
+	}
+
+	public int getTrashType() {
+		return trashtype;
 	}
 }

@@ -65,7 +65,7 @@ public class MouseController extends Controller implements MouseMotionListener, 
 
 	@Override
 	public void mouseDragged(MouseEvent e) {
-		mousex = verifyx((int) (e.getX() / Display.scale / GameField.TILESIZE));
+		mousex = verifyx((int) (e.getX() / Display.scale / GameField.TILESIZE) - Display.OFFSET_X);
 
 	}
 
@@ -73,8 +73,8 @@ public class MouseController extends Controller implements MouseMotionListener, 
 	public void mousePressed(MouseEvent e) {
 		if (e.getButton() == MouseEvent.BUTTON1) {
 			dragging = true;
-			int x = verifyx((int) (e.getX() / Display.scale / GameField.TILESIZE));
-			int y = verifyy((int) ((e.getY() / Display.scale + gf.getRaiseProgress()) / GameField.TILESIZE));
+			int x = verifyx((int) (e.getX() / Display.scale / GameField.TILESIZE) - Display.OFFSET_X);
+			int y = verifyy((int) ((e.getY() / Display.scale + gf.getRaiseProgress()) / GameField.TILESIZE) - Display.OFFSET_Y);
 			mousex = x;
 			left = myInput.cx >= x;
 			myInput.cx = myInput.cx >= x ? x : x - 1;
