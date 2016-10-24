@@ -8,7 +8,7 @@ import display.Display;
 
 public class Runner {
 	public static void main(String[] args) {
-		GameField gf = new GameField.Builder().blockTypeCount(5).fallSpeed(1).build();
+		GameField gf = new GameField.Builder().build();
 		JFrame j = new JFrame();
 		j.setSize(400, 500);
 		j.setVisible(true);
@@ -19,7 +19,7 @@ public class Runner {
 		GameInput g = m.getInput();
 		j.validate();
 		long time = System.currentTimeMillis();
-		long wait = 1000 / 3;
+		long wait = 1000 / 30;
 		long now;
 		boolean lag = false;
 		while (true) {
