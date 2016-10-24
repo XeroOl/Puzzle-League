@@ -78,8 +78,10 @@ public class Display extends Canvas {
 			for (int y = 0; y <= GameField.HEIGHT; y++) {
 				Block b = gf.blockAt(x, y);
 				if (b.isTrash()) {
+
 					drawPlayer(g, x * TILESIZE + TILESIZE * OFFSET_X, y * TILESIZE - b.getOffset() * TILESIZE / gf.getFallSpeedDivisor() - gf.getRaiseProgress() + TILESIZE * OFFSET_Y, getPlayerX(b.getColor()), getPlayerY(b.getColor()));
-				} else if (b.getColor() != 0 && !b.inMatchAnimation()) {
+
+				} else if (b.getColor() != 0 && (!b.inMatchAnimation() || !b.willDissappear())) {
 					drawBlock(g, x * TILESIZE + b.getSwapAnim() * 2 + TILESIZE * OFFSET_X, y * TILESIZE - b.getOffset() * TILESIZE / gf.getFallSpeedDivisor() - gf.getRaiseProgress() + TILESIZE * OFFSET_Y, getBlockX(b.getColor()), getBlockY(b.getColor()));
 				}
 			}
@@ -109,8 +111,15 @@ public class Display extends Canvas {
 		for (int x = 0; x < GameField.WIDTH; x++) {
 			for (int y = 0; y < GameField.HEIGHT; y++) {
 				Block b = gf.blockAt(x, y);
-				if (b.getColor() != 0) {
-					if (b.inMatchAnimation()) {
+				if (b.isTrash() && b.inMatchAnimation()) {
+					if (b.getMatchAnimationFrame() == 0) {
+						//draw new block
+					} else {
+						drawBlock(g, x * TILESIZE + TILESIZE / 2 - b.getMatchAnimationFrame() + TILESIZE * OFFSET_X, y * TILESIZE + TILESIZE / 2 - b.getMatchAnimationFrame() - gf.getRaiseProgress() + TILESIZE * OFFSET_Y, 2 * b.getMatchAnimationFrame(), 2 * b.getMatchAnimationFrame(), getBlockX(31), getBlockY(31), 1, 1);
+					}
+				} else {
+					if (b.getColor() != 0 && b.inMatchAnimation() && b.willDissappear()) {
+
 						drawBlock(g, x * TILESIZE + TILESIZE / 2 - b.getMatchAnimationFrame() + TILESIZE * OFFSET_X, y * TILESIZE + TILESIZE / 2 - b.getMatchAnimationFrame() - gf.getRaiseProgress() + TILESIZE * OFFSET_Y, 2 * b.getMatchAnimationFrame(), 2 * b.getMatchAnimationFrame(), getBlockX(b.getColor()), getBlockY(b.getColor()), 1, 1);
 						drawBlock(g, x * TILESIZE + TILESIZE * OFFSET_X, y * TILESIZE - gf.getRaiseProgress() + TILESIZE * OFFSET_Y, getMatchX(b.getChainNum()), getMatchY(b.getChainNum()));
 					}

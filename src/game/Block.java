@@ -12,6 +12,7 @@ public class Block {
 	byte swapAnim = 0;
 	int offset = 0;
 	int matchanimationframe = -1; // -1 means not matching, if >0, its how many frames till this block breaks
+	boolean dissappear = false;
 	int matchid = -1;
 
 	public Block() {
@@ -86,4 +87,9 @@ public class Block {
 	public int getTrashType() {
 		return trashtype;
 	}
+
+	public boolean willDissappear() {
+		return dissappear;
+	}
+
 }

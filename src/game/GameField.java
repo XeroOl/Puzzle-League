@@ -22,7 +22,7 @@ public class GameField {
 	private int maxtrashheight = 100; //number of lines of trash above top of screen before player loses
 	private int stoptimermultiplier = 10; // 10 = normal, 0 = instakill, -1 = infinite time
 	private int liftmultiplier = 16; // 0 = no lift, n = lift 1 in n frames
-	private int trashbreakstrategy = 0; // 0 = default, 1 = like in nanoha puzzle league
+	private int trashbreakstrategy = 0; // 0 = default, 1 = like in nanoha puzzle league, 2 = all into blocks
 	private boolean trashenabled = true;
 	private int clearline = -1; // line to clear by, where -1 is disabled;
 	private int timelimit = -1; // number of frames until gameover, where -1 is disabled
@@ -134,7 +134,6 @@ public class GameField {
 				board[y][x] = new Block();
 			}
 		}
-		
 
 		generateNextRow();
 		for (int h = 0; h < blockstartheight; h++) {
@@ -144,6 +143,9 @@ public class GameField {
 			board[HEIGHT - 1] = nextrow;
 			generateNextRow();
 		}
+		trashinput.add(new Trash(3, 6, 2));
+		trashinput.add(new Trash(2, 6, 2));
+		trashinput.add(new Trash(1, 6, 2));
 	}
 
 	public void update(final GameInput input) {
@@ -157,7 +159,7 @@ public class GameField {
 			match();
 			checkchains(); // set ground block's chain to false, if there is no match nor block that is chain, tell trash() to send the trash;
 			clearline();
-			trash(); //sends trash, and adds sent trash
+
 			lift(input);
 		} else {
 			fall();
@@ -271,6 +273,7 @@ public class GameField {
 				}
 			}
 		}//move trash from trashrow
+		trash(); //load in next trash row
 		if (trashenabled && trashrowvalid && !touchingTop()) {
 			for (int x = 0; x < WIDTH; x++) {
 				if (trashrow[x].trash) {
@@ -345,12 +348,11 @@ public class GameField {
 					if (board[y][x].matchanimationframe == -2) {
 						if (x != 0 && board[y][x - 1].isTrash() && board[y][x - 1].inMatchAnimation() == false && !board[y][x - 1].inair)
 							board[y][x - 1].matchanimationframe = -2;
-
 						if (x != WIDTH - 1 && board[y][x + 1].isTrash() && board[y][x + 1].inMatchAnimation() == false && !board[y][x + 1].inair)
 							board[y][x + 1].matchanimationframe = -2;
 						if (y != 0 && board[y - 1][x].isTrash() && board[y - 1][x].inMatchAnimation() == false && !board[y - 1][x].inair)
 							board[y - 1][x].matchanimationframe = -2;
-						if (y != HEIGHT - 1 && board[y + 1][x].isTrash() && board[y + 1][x].inMatchAnimation() == false && !board[y - 1][x].inair)
+						if (y != HEIGHT - 1 && board[y + 1][x].isTrash() && board[y + 1][x].inMatchAnimation() == false && !board[y + 1][x].inair)
 							board[y + 1][x].matchanimationframe = -2;
 					}
 				}
@@ -365,10 +367,24 @@ public class GameField {
 				}
 			}
 			/**************TRASH FINALIZE PHASE*************/
+			int t2 = 0;
 			for (int y = 0; y < HEIGHT; y++) {
 				for (int x = 0; x < WIDTH; x++) {
 					if (board[y][x].matchanimationframe == -3) {
 						board[y][x].matchanimationframe = trashcount * TILESIZE / 2 + 30;
+						board[y][x].matchid = t2++;
+						board[y][x].chainpowered = true;
+						switch (trashbreakstrategy) {
+						case 0:
+							board[y][x].dissappear = board[y][x].trashtype / 3 == 0 || board[y][x].trashtype / 3 == 3;
+							break;
+						case 1:
+							//IDK how to do nanoka
+						case 2:
+							board[y][x].dissappear = true;
+							break;
+						}
+
 					}
 				}
 			}
@@ -377,6 +393,7 @@ public class GameField {
 				for (int x = 0; x < WIDTH; x++) {
 					if (board[y][x].matchanimationframe == -2) {
 						board[y][x].matchanimationframe = count * TILESIZE / 2 + 30;
+						board[y][x].dissappear = true;
 					}
 				}
 			}
@@ -404,9 +421,6 @@ public class GameField {
 			if (y != HEIGHT - 1 && ((board[y][x].trashtype / 3 != 0 && board[y][x].trashtype / 3 != 3) || (board[y + 1][x].trash && (multiplayertrashmetal ? board[y + 1][x].color == board[y][x].color : board[y + 1][x].color == 0)))) {
 				count += spreadmatchtrash(x, y + 1);
 			}
-			if (y == 0) {
-				processtrashqueue(board[y][x].color);
-			}
 			if (y != 0 && ((board[y][x].trashtype / 3 != 0 && board[y][x].trashtype / 3 != 1) || (board[y - 1][x].trash && (multiplayertrashmetal ? board[y - 1][x].color == board[y][x].color : board[y - 1][x].color == 0)))) {
 				count += spreadmatchtrash(x, y - 1);
 			}
@@ -417,11 +431,7 @@ public class GameField {
 
 	private void processtrashqueue(int color) {
 		if (!trashinput.isEmpty()) {
-			Trash t = trashinput.peek();
-			if (t.type == 1)
-				t.type = 0;
-			if (t.type == 2)
-				t.type = 3;
+			//iterate through trash and process it
 		}
 	}
 
@@ -429,15 +439,27 @@ public class GameField {
 		int y2;
 		for (int y = 0; y < HEIGHT; y++) {
 			for (int x = 0; x < WIDTH; x++) {
-				if (board[y][x].matchanimationframe > 0) {
+				if (board[y][x].matchanimationframe >= 0) {
 					raise = false;
 					board[y][x].matchanimationframe--;
+					if (board[y][x].trash && board[y][x].dissappear && board[y][x].matchanimationframe * 2 - board[y][x].matchid * TILESIZE == 0) {
+						int frame = board[y][x].matchanimationframe;
+						board[y][x] = new Block(r.nextInt(colorcount) + 1, false, 0);
+						board[y][x].dissappear = false;
+						board[y][x].matchanimationframe = frame;
+						board[y][x].chainpowered = true;
+					}
 					if (board[y][x].matchanimationframe == 0) {
 						if (board[y][x].trash) {
-							board[y][x] = new Block();
-							board[y][x].color = r.nextInt(colorcount) + 1;
+							if (board[y][x].trashtype / 3 == 2 && !board[y + 1][x].trash) {
+								board[y][x].trashtype += 3;
+							}
+							if (board[y][x].trashtype / 3 == 1 && !board[y + 1][x].trash) {
+								board[y][x].trashtype -= 3;
+							}
 						} else {
-							board[y][x] = new Block();
+							if (board[y][x].dissappear)
+								board[y][x] = new Block();
 						}
 						for (y2 = y - 1; y2 >= 0 && board[y2][x].canMatch(); y2--) {
 							board[y2][x].chainpowered = true;
@@ -452,7 +474,7 @@ public class GameField {
 		boolean keep = false;
 		for (int y = 0; y < HEIGHT; y++) {
 			for (int x = 0; x < WIDTH; x++) {
-				if (board[y][x].canMatch() && (y == HEIGHT - 1 || !board[y + 1][x].inSwapAnimation()) || board[y][x].removechainpower) {
+				if ((board[y][x].trash || board[y][x].color != 0) && !board[y][x].inair && !board[y][x].inAnimation() && (y == HEIGHT - 1 || !board[y + 1][x].inSwapAnimation()) || board[y][x].removechainpower) {
 					board[y][x].chainpowered = false;
 					board[y][x].removechainpower = false;
 				} else {
@@ -473,10 +495,13 @@ public class GameField {
 					}
 					trashoutput.add(new Trash(1, WIDTH, player));
 				}
+				trashoutput.addAll(combotrashoutput);
+				combotrashoutput.clear();
 			}
 			mychain = 1;
+
 		}
-		if ((!combotrashontop || !keep) && !combotrashoutput.isEmpty()) {
+		if ((!combotrashontop || raise)) {
 			trashoutput.addAll(combotrashoutput);
 			combotrashoutput.clear();
 		}
@@ -490,13 +515,19 @@ public class GameField {
 		if (!trashoutput.isEmpty()) {
 			trashinput.add(trashoutput.poll());
 		}
-		if (!trashrowvalid && !trashinput.isEmpty()) {
+		if (!trashrowvalid && !touchingTop() && !trashinput.isEmpty()) {
 			Trash t = trashinput.poll();
 			if (t.type == 0 || t.type == 3) {
 				offset = r.nextInt(WIDTH - t.width + 1);
 			}
 			for (int x = 0; x < WIDTH; x++) {
 				trashrow[x] = new Block();
+			}//The zero is abritrary
+			if (t.type == 1 && !board[1][0].trash) {
+				t.type = 0;
+			}
+			if (t.type == 2 && !board[1][0].trash) {
+				t.type = 3;
 			}
 			trashrow[offset] = new Block(t.color, true, t.type * 3);
 			for (int x = offset + 1; x < offset + t.width - 1; x++) {
@@ -508,6 +539,7 @@ public class GameField {
 			for (int x = 0; x < WIDTH; x++) {
 				if (trashrow[x].isTrash() && (t.type == 1 || t.type == 2)) {
 					trashrow[x].veldown = fallspeeddivisor;
+
 				}
 			}
 			raise = false;
@@ -525,6 +557,9 @@ public class GameField {
 			forcelift = true;
 		} else if (raise && liftmultiplier > 0 && stoptimermultiplier != -1) {
 			if (stopframes > 0) {
+				if (stopframes > stoptimemax) {
+					stopframes = stoptimemax;
+				}
 				stopframes--;
 			} else {
 				raiseframecounter++;
@@ -703,6 +738,9 @@ public class GameField {
 	}
 
 	public int getGarbageAmount() {
+		if (trashrowvalid) {
+			return 9;
+		}
 		return trashinput.size() * 48 / maxtrashheight;
 	}
 
