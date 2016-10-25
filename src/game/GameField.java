@@ -17,10 +17,10 @@ public class GameField {
 	public static final int TILESIZE = 16;
 	/*------------------------------*OPTIONS*------------------------------*/
 	private boolean explodelift = true;
-	private int fallspeed = 32; // fallspeed 4 = beginner 32 = normal, 64 = hard, -1 = instant
+	private int fallspeed = 16; // fallspeed 4 = beginner 16 = normal, 64 = hard, -1 = instant
 	private int colorcount = 5; //number of unique colors of blocks (up to 9)
 	private int maxtrashheight = 100; //number of lines of trash above top of screen before player loses
-	private int stoptimermultiplier = 10; // 10 = normal, 0 = instakill, -1 = infinite time
+	private int stoptimermultiplier = 15; // 20 = normal, 0 = instakill, -1 = infinite time
 	private int liftmultiplier = 16; // 0 = no lift, n = lift 1 in n frames
 	private int trashbreakstrategy = 0; // 0 = default, 1 = like in nanoha puzzle league, 2 = all into blocks
 	private boolean trashenabled = true;
@@ -32,11 +32,13 @@ public class GameField {
 	private int stoptimecombo = 1;
 	private int stoptimechain = 10;
 	private int stoptimebuffer = 5;
-	private int stoptimemax = 960;
+	private int stoptimemax = 480;
 	private int blockstartheight = 5;
 	private int fallspeeddivisor = 1024;
 	private int player = 1;
 	private boolean processoffscreentrash = false;
+	private int displayheight = 48;
+	private int cleardelay = 60;
 	/*------------------------------*CODE*------------------------------*/
 	private static final Random r = new Random();
 	private Block[][] board = new Block[HEIGHT][WIDTH];
@@ -143,9 +145,6 @@ public class GameField {
 			board[HEIGHT - 1] = nextrow;
 			generateNextRow();
 		}
-		trashinput.add(new Trash(3, 6, 2));
-		trashinput.add(new Trash(2, 6, 2));
-		trashinput.add(new Trash(1, 6, 2));
 	}
 
 	public void update(final GameInput input) {
@@ -371,7 +370,7 @@ public class GameField {
 			for (int y = 0; y < HEIGHT; y++) {
 				for (int x = 0; x < WIDTH; x++) {
 					if (board[y][x].matchanimationframe == -3) {
-						board[y][x].matchanimationframe = trashcount * TILESIZE / 2 + 30;
+						board[y][x].matchanimationframe = trashcount * TILESIZE / 2 + cleardelay;
 						board[y][x].matchid = t2++;
 						board[y][x].chainpowered = true;
 						switch (trashbreakstrategy) {
@@ -392,7 +391,7 @@ public class GameField {
 			for (int y = 0; y < HEIGHT; y++) {
 				for (int x = 0; x < WIDTH; x++) {
 					if (board[y][x].matchanimationframe == -2) {
-						board[y][x].matchanimationframe = count * TILESIZE / 2 + 30;
+						board[y][x].matchanimationframe = count * TILESIZE / 2 + cleardelay;
 						board[y][x].dissappear = true;
 					}
 				}
@@ -474,7 +473,7 @@ public class GameField {
 		boolean keep = false;
 		for (int y = 0; y < HEIGHT; y++) {
 			for (int x = 0; x < WIDTH; x++) {
-				if ((board[y][x].trash || board[y][x].color != 0) && !board[y][x].inair && !board[y][x].inAnimation() && (y == HEIGHT - 1 || !board[y + 1][x].inSwapAnimation()) || board[y][x].removechainpower) {
+				if ((board[y][x].trash || board[y][x].color != 0) && !board[y][x].inair && !board[y][x].inAnimation() && (y == HEIGHT - 1 || !board[y + 1][x].inSwapAnimation()) || (board[y][x].removechainpower && !board[y][x].inMatchAnimation())) {
 					board[y][x].chainpowered = false;
 					board[y][x].removechainpower = false;
 				} else {
@@ -564,6 +563,7 @@ public class GameField {
 			} else {
 				raiseframecounter++;
 				if (touchingTop()) {
+					System.out.println("GO2");
 					gameover = true;
 					return;
 				}
@@ -580,6 +580,7 @@ public class GameField {
 
 			if (touchingTop()) {
 				//gameover 
+				System.out.println("GO1");
 				gameover = true;
 				return;
 			}
@@ -741,11 +742,11 @@ public class GameField {
 		if (trashrowvalid) {
 			return 9;
 		}
-		return trashinput.size() * 48 / maxtrashheight;
+		return trashinput.size() * displayheight / maxtrashheight;
 	}
 
 	public int getStopTime() {
-		return stopframes * 48 / stoptimemax;
+		return stopframes * displayheight / stoptimemax;
 	}
 
 	public int getFallSpeedDivisor() {
