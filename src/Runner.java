@@ -21,21 +21,15 @@ public class Runner {
 		long time = System.currentTimeMillis();
 		long wait = 1000 / 30;
 		long now;
-		boolean lag = false;
 		while (true) {
 			now = System.currentTimeMillis();
 			if (now > time + wait) {
-				if (lag) {
-					System.out.println("Catching up");
-				}
-				lag = true;
 				time += wait;
 				g = m.getInput();
 				gf.update(g);
 				d.update(gf);
 			} else {
 				try {
-					lag = false;
 					Thread.sleep(time + wait - now);
 				} catch (InterruptedException e) {
 					// TODO Auto-generated catch block

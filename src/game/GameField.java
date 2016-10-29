@@ -15,30 +15,33 @@ public class GameField {
 	public static final int HEIGHT = 12;
 	public static final int WIDTH = 6;
 	public static final int TILESIZE = 16;
-	/*------------------------------*OPTIONS*------------------------------*/
+	/*------------------------------*COMPLETED-OPTIONS*------------------------------*/
 	private boolean explodelift = true;
 	private int fallspeed = 16; // fallspeed 4 = beginner 16 = normal, 64 = hard, -1 = instant
 	private int colorcount = 5; //number of unique colors of blocks (up to 9)
 	private int maxtrashheight = 100; //number of lines of trash above top of screen before player loses
-	private int stoptimermultiplier = 15; // 20 = normal, 0 = instakill, -1 = infinite time
+	private boolean multiplayertrashmetal = true; // trash sent by one player will not clear adjacent trash from other players
+	private boolean combotrashontop = true; // when a player makes a combo during a chain, should the trash for the combo be saved until after the chain trash is sent?
+	private int clearlineheight = -1; // -1 = off
+	/*------------------------------*OPTIONS*------------------------------*/
+	private int stoptimermultiplier = 10; // 10 = normal, 0 = instakill, -1 = infinite time
 	private int liftmultiplier = 16; // 0 = no lift, n = lift 1 in n frames
 	private int trashbreakstrategy = 0; // 0 = default, 1 = like in nanoha puzzle league, 2 = all into blocks
 	private boolean trashenabled = true;
-	private int clearline = -1; // line to clear by, where -1 is disabled;
+
+	/*------------------------------PLANNED-OPTIONS*-(I'm writing code right now, so these might be unstable)----------------------------*/
 	private int timelimit = -1; // number of frames until gameover, where -1 is disabled
-	private boolean multiplayertrashmetal = true; // trash sent by one player will not clear adjacent trash from other players
-	private boolean combotrashontop = true; // when a player makes a combo during a chain, should the trash for the combo be saved until after the chain trash is sent?
-	/*------------------------------*NON-OPTIONS*------------------------------*/
+	private boolean processoffscreentrash = false;
+	/*------------------------------*COULD-BE-OPTIONS*------------------------------*/
 	private int stoptimecombo = 1;
 	private int stoptimechain = 10;
-	private int stoptimebuffer = 5;
-	private int stoptimemax = 480;
+	//private int stoptimebuffer = 5; Removed because it was too cheaty
+	private int stoptimemax = 240;
 	private int blockstartheight = 5;
 	private int fallspeeddivisor = 1024;
-	private int player = 1;
-	private boolean processoffscreentrash = false;
+	private int player = 0;
 	private int displayheight = 48;
-	private int cleardelay = 60;
+	private int cleardelay = 40;
 	/*------------------------------*CODE*------------------------------*/
 	private static final Random r = new Random();
 	private Block[][] board = new Block[HEIGHT][WIDTH];
@@ -47,6 +50,8 @@ public class GameField {
 	private int stopframes = 0;
 	private int raiseframecounter = 0;
 	private int raiseprogress = 0;
+	private int linesraised = 0;
+	private int clearlinedisplayrow = -1;
 	private boolean raise = true; // set to false if anything at all should stop the stack from raising
 	private boolean forcelift = false;
 	private Block[] nextrow = new Block[WIDTH];
@@ -101,8 +106,8 @@ public class GameField {
 			return this;
 		}
 
-		public Builder clearline(int clearline) {
-			p.clearline = clearline;
+		public Builder clearlineHeight(int clearline) {
+			p.clearlineheight = clearline;
 			return this;
 		}
 
@@ -157,9 +162,8 @@ public class GameField {
 			fall();
 			match();
 			checkchains(); // set ground block's chain to false, if there is no match nor block that is chain, tell trash() to send the trash;
-			clearline();
-
 			lift(input);
+			clearline();
 		} else {
 			fall();
 		}
@@ -507,12 +511,35 @@ public class GameField {
 	}
 
 	private void clearline() {
-		//coming soon
+
+		if (clearlineheight != -1 && clearlineheight <= linesraised) {
+			clearlinedisplayrow = HEIGHT + clearlineheight - linesraised;
+
+			if (raise) {
+				for (int i = clearlinedisplayrow - 1; i >= 0; i--) {
+					for (int x = 0; x < WIDTH; x++) {
+						if (board[i][x].isSolid() && !board[i][x].isTrash()) {// only color blocks matter for clearline
+							return;
+						}
+					}
+				}
+				System.out.println("you win");
+				gameover = true;
+			}
+		}
+
 	}
 
 	private void trash() {
-		if (!trashoutput.isEmpty()) {
-			trashinput.add(trashoutput.poll());
+
+		/*if (!trashoutput.isEmpty()) {
+		*	trashinput.add(trashoutput.poll());
+		}*/
+
+		if (trashinput.size() > maxtrashheight) {
+			System.out.println("you lose");
+			gameover = true;
+			return;
 		}
 		if (!trashrowvalid && !touchingTop() && !trashinput.isEmpty()) {
 			Trash t = trashinput.poll();
@@ -551,7 +578,9 @@ public class GameField {
 
 	private void lift(GameInput input) {
 		if (forcelift || input.raisingStack && (explodelift || raise) && !touchingTop()) {
-			stopframes /= 2;
+			if (stopframes > 0) {
+				stopframes -= 2;
+			}
 			raiseprogress++;
 			forcelift = true;
 		} else if (raise && liftmultiplier > 0 && stoptimermultiplier != -1) {
@@ -563,7 +592,7 @@ public class GameField {
 			} else {
 				raiseframecounter++;
 				if (touchingTop()) {
-					System.out.println("GO2");
+					System.out.println("you lose");
 					gameover = true;
 					return;
 				}
@@ -577,10 +606,9 @@ public class GameField {
 		if (raiseprogress == TILESIZE) {
 			raiseprogress = 0;
 			forcelift = false;
-
+			linesraised++;
 			if (touchingTop()) {
-				//gameover 
-				System.out.println("GO1");
+				System.out.println("you lose");
 				gameover = true;
 				return;
 			}
@@ -592,9 +620,6 @@ public class GameField {
 			}
 			board[HEIGHT - 1] = nextrow;
 			generateNextRow();
-			if (touchingTop()) {
-				stopframes += stoptimebuffer * stoptimermultiplier;
-			}
 		} else {
 			coordshifted = false;
 		}
@@ -755,6 +780,10 @@ public class GameField {
 
 	public boolean isGameOver() {
 		return gameover;
+	}
+
+	public int getClearLineDisplayHeight() {
+		return clearlinedisplayrow;
 	}
 
 }

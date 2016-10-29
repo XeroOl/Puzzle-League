@@ -61,6 +61,7 @@ public class Display extends Canvas {
 		g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, .3f));
 		drawMatchingTiles(g, gf);
 		g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER));
+		drawClearLine(g, gf);
 		drawSurroundings(g, gf);
 		drawCursor(g, gf);
 		drawStatusBars(g, gf);
@@ -130,6 +131,11 @@ public class Display extends Canvas {
 
 	private void drawCursor(Graphics2D g, GameField gf) {
 		drawGUI(g, gf.getCursorX() * TILESIZE - TILESIZE + TILESIZE * OFFSET_X, gf.getCursorY() * TILESIZE - TILESIZE - gf.getRaiseProgress() + TILESIZE * OFFSET_Y, cursorwidth * TILESIZE, cursorheight * TILESIZE, getCursorX(0), getCursorY(0), cursorwidth, cursorheight);//get(themepath + "cursor.png"),
+	}
+
+	private void drawClearLine(Graphics2D g, GameField gf) {
+		if (gf.getClearLineDisplayHeight() != -1)
+			drawGUI(g, TILESIZE * OFFSET_X, gf.getClearLineDisplayHeight() * TILESIZE - TILESIZE - gf.getRaiseProgress() + TILESIZE * OFFSET_Y, clearlinewidth * TILESIZE, clearlineheight * TILESIZE, clearlinex, clearliney, clearlinewidth, clearlineheight);
 	}
 
 	private void drawSurroundings(Graphics2D g, GameField gf) {
@@ -225,6 +231,10 @@ public class Display extends Canvas {
 	static int garbagemetery = 1;
 	static int stopmeterx = 16;
 	static int stopmetery = 1;
+	static int clearlinex = 26;
+	static int clearliney = 0;
+	static int clearlinewidth = 6;
+	static int clearlineheight = 2;
 
 	private static int getBlockX(int blockid) {
 		return blockid % 8;
